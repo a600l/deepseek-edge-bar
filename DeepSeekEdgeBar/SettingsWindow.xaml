@@ -42,59 +42,6 @@
         </Grid>
 
         <StackPanel Grid.Row="1" Margin="16,4,16,16">
-            <TextBlock Text="DeepSeek account"
-                       FontSize="11" Foreground="#FF94A3B8"/>
-            <TextBlock Text="Optional — unlocks account info. Session token stored locally, never your password."
-                       FontSize="11" Foreground="#FF94A3B8" Margin="0,2,0,0"/>
-            <TextBox x:Name="AccountEmailBox"
-                     Height="30" Margin="0,6,0,0" Padding="6"
-                     Background="#FF0B1120" Foreground="#FFF8FAFC"
-                     BorderBrush="#FF1F2A44" BorderThickness="1"/>
-            <PasswordBox x:Name="AccountPasswordBox"
-                         Height="30" Margin="0,6,0,0" Padding="6"
-                         Background="#FF0B1120" Foreground="#FFF8FAFC"
-                         BorderBrush="#FF1F2A44" BorderThickness="1"/>
-            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                <Button x:Name="SignInButton"
-                        Content="Sign in"
-                        Width="90" Height="30" Margin="0,0,8,0"
-                        Background="#FF22C55E" Foreground="#FF07140B"
-                        FontWeight="SemiBold"
-                        BorderThickness="0" Cursor="Hand"
-                        Click="SignInButton_Click"/>
-                <Button x:Name="SignOutButton"
-                        Content="Sign out"
-                        Width="90" Height="30"
-                        Background="#FF101828" Foreground="#FFF8FAFC"
-                        BorderBrush="#FF1F2A44" BorderThickness="1"
-                        Cursor="Hand"
-                        Click="SignOutButton_Click"/>
-            </StackPanel>
-            <TextBlock x:Name="AccountStatus"
-                       FontSize="11" Foreground="#FF94A3B8"
-                       TextWrapping="Wrap" Margin="0,8,0,0"/>
-
-            <Rectangle Height="1" Fill="#FF1F2A44" Margin="0,10,0,0"/>
-            <TextBlock Text="Use a browser session token (Google-apple accounts)"
-                       FontSize="11" Foreground="#FF94A3B8" Margin="0,10,0,0"/>
-            <TextBlock Text="Copy userToken, then paste it here:"
-                       FontSize="11" Foreground="#FF94A3B8" Margin="0,2,0,0"/>
-            <TextBox x:Name="TokenBox"
-                     Height="30" Margin="0,6,0,0" Padding="6"
-                     Background="#FF0B1120" Foreground="#FFF8FAFC"
-                     BorderBrush="#FF1F2A44" BorderThickness="1"
-                     FontFamily="Consolas" FontSize="11"
-                     ToolTip="1. Sign in to chat.deepseek.com with a Google/Apple account.&#x0a;2. Press F12 to open DevTools.&#x0a;3. Open Application → Local Storage → https://chat.deepseek.com.&#x0a;4. Find the key named userToken and copy its value.&#x0a;5. Paste it here and click Use token."/>
-            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                <Button x:Name="UseTokenButton"
-                        Content="Use token"
-                        Width="90" Height="30"
-                        Background="#FF22C55E" Foreground="#FF07140B"
-                        FontWeight="SemiBold"
-                        BorderThickness="0" Cursor="Hand"
-                        Click="UseTokenButton_Click"/>
-            </StackPanel>
-
             <TextBlock Text="DeepSeek Platform token (usage stats)"
                        FontSize="11" Foreground="#FF94A3B8" Margin="0,18,0,0"/>
             <TextBlock Text="Optional — unlocks per-model token usage, requests, and cost tracking."
@@ -127,6 +74,16 @@
                          Background="#FF0B1120" Foreground="#FFF8FAFC"
                          BorderBrush="#FF1F2A44" BorderThickness="1"/>
 
+            <TextBlock Text="Balance bar target"
+                       Margin="0,14,0,0"
+                       FontSize="11" Foreground="#FF94A3B8"/>
+            <TextBlock Text="The strip's two-tone fill = balance divided by this amount (default 10). A balance equal to this value fills the whole bar."
+                       FontSize="11" Foreground="#FF94A3B8" Margin="0,2,0,0" TextWrapping="Wrap"/>
+            <TextBox x:Name="FullBarBox"
+                     Height="30" Margin="0,6,0,0" Padding="6" Width="120" HorizontalAlignment="Left"
+                     Background="#FF0B1120" Foreground="#FFF8FAFC"
+                     BorderBrush="#FF1F2A44" BorderThickness="1"/>
+
             <TextBlock Text="Opacity"
                        Margin="0,14,0,0"
                        FontSize="11" Foreground="#FF94A3B8"/>
@@ -140,21 +97,8 @@
                            VerticalAlignment="Center" Width="40"/>
             </StackPanel>
 
-            <CheckBox x:Name="HideToTrayCheck" Content="Hide to tray on close"
-                      Foreground="#FFF8FAFC" Margin="0,14,0,0"/>
             <CheckBox x:Name="StartWithWindowsCheck" Content="Start with Windows"
-                      Foreground="#FFF8FAFC" Margin="0,8,0,0"/>
-
-            <TextBlock Text="Edge to dock on startup"
-                       Margin="0,14,0,0"
-                       FontSize="11" Foreground="#FF94A3B8"/>
-            <ComboBox x:Name="EdgeCombo"
-                      Margin="0,6,0,0" Width="140" HorizontalAlignment="Left"
-                      Background="#FF101828" Foreground="#FFF8FAFC"
-                      BorderBrush="#FF1F2A44" BorderThickness="1">
-                <ComboBoxItem Content="Right"/>
-                <ComboBoxItem Content="Left"/>
-            </ComboBox>
+                      Foreground="#FFF8FAFC" Margin="0,14,0,0"/>
 
             <Grid Margin="0,18,0,0">
                 <Grid.ColumnDefinitions>

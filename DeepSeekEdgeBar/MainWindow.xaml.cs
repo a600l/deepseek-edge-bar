@@ -25,10 +25,10 @@ public partial class MainWindow : Window
     private static readonly SolidColorBrush RedBrush = new SolidColorBrush(Color.FromRgb(0xEF, 0x44, 0x44));
     private static readonly SolidColorBrush AmberBrush = new SolidColorBrush(Color.FromRgb(0xF5, 0x9E, 0x0B));
     private static readonly SolidColorBrush GrayBrush = new SolidColorBrush(Color.FromRgb(0x64, 0x74, 0x8B));
-    private const decimal FullBalance = 10m;
 
     private readonly DispatcherTimer _refreshTimer;
     private bool _isExpanded;
+    private bool _clickOnStrip;
     private Point _mouseDownPos;
     private string _edge;
     private double _barHeight = BarHeight;
@@ -39,10 +39,12 @@ public partial class MainWindow : Window
         Height = BarHeight;
         Opacity = SettingsStore.LoadOpacity();
         _edge = SettingsStore.LoadEdge();
+        AlignStripToEdge();
         _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(RefreshMs) };
         _refreshTimer.Tick += (s, ev) => RefreshAll();
         MouseLeftButtonDown += MainWindow_MouseLeftButtonDown;
         MouseLeftButtonUp += MainWindow_MouseLeftButtonUp;
+        SizeChanged += MainWindow_SizeChanged;
         SourceInitialized += MainWindow_SourceInitialized;
         Deactivated += (s, ev) => { if (_isExpanded) CollapsePanel(); };
     }
@@ -56,64 +58,49 @@ public partial class MainWindow : Window
 
     private void CollapsedStrip_MouseEnter(object sender, MouseEventArgs e)
     {
-        if (_isExpanded) return;
         collapsedStrip.Opacity = 1.0;
         Grip.Visibility = Visibility.Visible;
     }
 
     private void CollapsedStrip_MouseLeave(object sender, MouseEventArgs e)
     {
-        if (_isExpanded) return;
         collapsedStrip.Opacity = 0.85;
         Grip.Visibility = Visibility.Collapsed;
+    }
+
+    private void AlignStripToEdge()
+    {
+        collapsedStrip.HorizontalAlignment = SettingsStore.IsLeftEdge()
+            ? HorizontalAlignment.Left
+            : HorizontalAlignment.Right;
     }
 
     private void ExpandPanel()
     {
         if (_isExpanded) return;
         _isExpanded = true;
-        RepositionForExpand();
-        collapsedStrip.Visibility = Visibility.Hidden;
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
         expandedPanel.Visibility = Visibility.Visible;
-        DoubleAnimation anim = new DoubleAnimation(ExpandedWidth, TimeSpan.FromMilliseconds(150))
-        {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        anim.Completed += (s, ev) => RepositionForEdge();
-        BeginAnimation(WidthProperty, anim);
-        DoubleAnimation hAnim = new DoubleAnimation(ExpandedHeight, TimeSpan.FromMilliseconds(150))
-        {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        BeginAnimation(HeightProperty, hAnim);
+        BeginAnimation(WidthProperty, new DoubleAnimation(ExpandedWidth, TimeSpan.FromMilliseconds(150)) { EasingFunction = ease });
+        BeginAnimation(HeightProperty, new DoubleAnimation(ExpandedHeight, TimeSpan.FromMilliseconds(150)) { EasingFunction = ease });
     }
 
     private void CollapsePanel()
     {
         if (!_isExpanded) return;
         _isExpanded = false;
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
         DoubleAnimation widthAnim = new DoubleAnimation(CollapsedWidth, TimeSpan.FromMilliseconds(150))
         {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            EasingFunction = ease
         };
         widthAnim.Completed += (s, ev) =>
         {
             if (_isExpanded) return;
             expandedPanel.Visibility = Visibility.Hidden;
-            collapsedStrip.Visibility = Visibility.Visible;
-            RepositionForEdge();
         };
         BeginAnimation(WidthProperty, widthAnim);
-        DoubleAnimation hAnim = new DoubleAnimation(_barHeight, TimeSpan.FromMilliseconds(150))
-        {
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        BeginAnimation(HeightProperty, hAnim);
-    }
-
-    private void RepositionForExpand()
-    {
-        DockToEdge();
+        BeginAnimation(HeightProperty, new DoubleAnimation(_barHeight, TimeSpan.FromMilliseconds(150)) { EasingFunction = ease });
     }
 
     private void PositionWindow()
@@ -123,14 +110,13 @@ public partial class MainWindow : Window
 
     private void DockToEdge()
     {
+        if (ActualWidth <= 0d || ActualHeight <= 0d) return;
         Rect wa = SystemParameters.WorkArea;
-        double width = _isExpanded ? ExpandedWidth : ActualWidth;
-        double height = _isExpanded ? Math.Max(ActualHeight, ExpandedHeight) : _barHeight;
-        Left = SettingsStore.IsLeftEdge() ? wa.Left : wa.Right - width;
-        Top = wa.Top + (wa.Height - height) / 2;
+        Left = SettingsStore.IsLeftEdge() ? wa.Left : wa.Right - ActualWidth;
+        Top = wa.Top + (wa.Height - ActualHeight) / 2;
     }
 
-    private void RepositionForEdge()
+    private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
     {
         DockToEdge();
     }
@@ -148,23 +134,30 @@ public partial class MainWindow : Window
             origin = VisualTreeHelper.GetParent(origin);
         }
 
+        _clickOnStrip = ContainsStrip(e.OriginalSource as DependencyObject);
         _mouseDownPos = e.GetPosition(this);
+    }
+
+    private static bool ContainsStrip(DependencyObject? origin)
+    {
+        while (origin != null)
+        {
+            if (origin is System.Windows.Controls.Border b && b.Name == "collapsedStrip") return true;
+            origin = VisualTreeHelper.GetParent(origin);
+        }
+        return false;
     }
 
     private void MainWindow_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
         if ((e.GetPosition(this) - _mouseDownPos).Length >= DragThreshold) return;
-        if (_isExpanded) return;
-        ExpandPanel();
+        if (!_isExpanded) { ExpandPanel(); return; }
+        if (_clickOnStrip) CollapsePanel();
     }
 
     public async void RefreshAll()
     {
         string key = SettingsStore.LoadApiKey();
-        string token = SettingsStore.LoadSessionToken();
-        string email = SettingsStore.LoadAccountEmail();
-        string name = SettingsStore.LoadDisplayName();
-        string accountLine = string.Empty;
         string platformToken = SettingsStore.LoadPlatformSessionToken();
         string usageToday = string.Empty;
         string usageMonth = string.Empty;
@@ -182,7 +175,6 @@ public partial class MainWindow : Window
                 BalanceValue.Text = "—";
                 BalanceDetail.Text = string.Empty;
                 ApiKeyStatus.Text = "No API key — open settings (⚙)";
-                AccountLine.Text = string.Empty;
                 UsageToday.Text = string.Empty;
                 UsageMonth.Text = string.Empty;
                 UsageTopModel.Text = string.Empty;
@@ -196,29 +188,6 @@ public partial class MainWindow : Window
             DeepSeekApiClient client = new DeepSeekApiClient(key);
             BalanceInfo info = await client.GetBalanceAsync();
             List<string> models = await client.GetModelsAsync();
-
-            string accountEmail = email;
-            if (!string.IsNullOrWhiteSpace(token))
-            {
-                try
-                {
-                    var session = await new DeepSeekAccountClient().GetCurrentAsync(token);
-                    if (!string.IsNullOrWhiteSpace(session.Token))
-                    {
-                        SettingsStore.SaveSessionToken(session.Token);
-                        if (!string.IsNullOrWhiteSpace(session.Email)) { accountEmail = session.Email; SettingsStore.SaveAccountEmail(session.Email); }
-                    }
-                    accountLine = !string.IsNullOrWhiteSpace(name)
-                        ? (string.IsNullOrWhiteSpace(accountEmail) ? $"\u2630 {name}" : $"\u2630 {name} · {accountEmail}")
-                        : (string.IsNullOrWhiteSpace(accountEmail) ? "" : $"\u2630 {accountEmail}");
-                }
-                catch (DeepSeekAuthException)
-                {
-                    SettingsStore.ClearAccount();
-                    accountEmail = "";
-                    accountLine = "session expired — re-login in Settings";
-                }
-            }
 
             if (!string.IsNullOrWhiteSpace(platformToken))
             {
@@ -244,6 +213,7 @@ public partial class MainWindow : Window
             bool accountProblem = !info.IsAvailable || info.TotalBalance <= 0;
             bool peak = !accountProblem && PeakHoursService.IsPeakTime(utc);
             string countdown = PeakHoursService.FormatCountdown(PeakHoursService.TimeUntilNextChange(utc));
+            decimal fullAmount = SettingsStore.LoadFullBarAmount();
 
             await Dispatcher.InvokeAsync(() =>
             {
@@ -260,20 +230,19 @@ public partial class MainWindow : Window
                 }
                 else
                 {
-                    collapsedStrip.Background = BarGradient(info.TotalBalance);
+                    collapsedStrip.Background = BarGradient(info.TotalBalance, fullAmount);
                     StatusDot.Fill = peak ? PeakBrush : GreenBrush;
                     SetBarHeight(peak ? PeakBarHeight : BarHeight);
                     StatusValue.Text = peak ? "PEAK · 2× rates" : "OFF-PEAK · lowest rates";
                     StatusCountdown.Text = (peak ? "off in " : "peak in ") + countdown;
                     BalanceValue.Text = $"{info.Currency} {info.TotalBalance:0.00}";
-                    BalanceValue.Foreground = BrushForBalance(info.TotalBalance);
-                    BalanceDetail.Foreground = BrushForBalance(info.TotalBalance);
+                    BalanceValue.Foreground = BrushForBalance(info.TotalBalance, fullAmount);
+                    BalanceDetail.Foreground = BrushForBalance(info.TotalBalance, fullAmount);
                     BalanceDetail.Text = $"available · granted {info.Currency} {info.GrantedBalance:0.00} · topped-up {info.Currency} {info.ToppedUpBalance:0.00}";
                     ApiKeyStatus.Text = string.Empty;
                 }
                 ModelValue.Text = string.Join(" · ", models);
                 LastRefresh.Text = "refreshed " + DateTime.Now.ToString("HH:mm:ss");
-                AccountLine.Text = accountLine;
                 UsageToday.Text = usageToday;
                 UsageMonth.Text = usageMonth;
                 UsageTopModel.Text = usageTopModel;
@@ -291,7 +260,6 @@ public partial class MainWindow : Window
                 BalanceValue.Text = "—";
                 BalanceDetail.Text = string.Empty;
                 ApiKeyStatus.Text = "API error — check key";
-                AccountLine.Text = string.Empty;
                 UsageToday.Text = string.Empty;
                 UsageMonth.Text = string.Empty;
                 UsageTopModel.Text = string.Empty;
@@ -315,6 +283,7 @@ public partial class MainWindow : Window
     private void SetBarHeight(double targetHeight)
     {
         _barHeight = targetHeight;
+        collapsedStrip.Height = targetHeight;
         if (_isExpanded) return;
         DoubleAnimation anim = new DoubleAnimation(targetHeight, TimeSpan.FromMilliseconds(150))
         {
@@ -323,9 +292,9 @@ public partial class MainWindow : Window
         BeginAnimation(HeightProperty, anim);
     }
 
-    private static SolidColorBrush BrushForBalance(decimal balance)
+    private static SolidColorBrush BrushForBalance(decimal balance, decimal fullAmount)
     {
-        double ratio = balance <= 0m ? 0d : Math.Min(1d, (double)(balance / FullBalance));
+        double ratio = balance <= 0m ? 0d : Math.Min(1d, (double)(balance / fullAmount));
         double t = Math.Sqrt(ratio);
         Color full = Color.FromRgb(0x22, 0xC5, 0x5E);
         Color empty = Color.FromRgb(0xEF, 0x44, 0x44);
@@ -335,9 +304,9 @@ public partial class MainWindow : Window
         return new SolidColorBrush(Color.FromRgb(r, g, b));
     }
 
-    private static LinearGradientBrush BarGradient(decimal balance)
+    private static LinearGradientBrush BarGradient(decimal balance, decimal fullAmount)
     {
-        double ratio = Math.Max(0d, Math.Min(1d, (double)(balance / FullBalance)));
+        double ratio = Math.Max(0d, Math.Min(1d, (double)(balance / fullAmount)));
         var brush = new LinearGradientBrush
         {
             StartPoint = new Point(0.5, 1), EndPoint = new Point(0.5, 0)
@@ -368,7 +337,8 @@ public partial class MainWindow : Window
 
     private void ExitButton_Click(object sender, RoutedEventArgs e)
     {
-        Application.Current.Shutdown();
+        CollapsePanel();
+        Hide();
     }
 
     private void MainWindow_SourceInitialized(object? sender, System.EventArgs e)

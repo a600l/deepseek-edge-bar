@@ -22,7 +22,7 @@ public partial class App : Application
         _mainWindow.Show();
         _mainWindow.Closing += (s, args) =>
         {
-            if (!_forceExit && SettingsStore.LoadHideToTray()) { args.Cancel = true; _mainWindow.Hide(); }
+            if (!_forceExit) { args.Cancel = true; _mainWindow.Hide(); }
         };
     }
 

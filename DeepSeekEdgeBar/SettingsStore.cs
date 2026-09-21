@@ -64,6 +64,10 @@ public static class SettingsStore
     public static string LoadDeviceId() => ReadString("DeviceId", "");
     public static void SaveDeviceId(string value) => WriteString("DeviceId", value ?? "");
 
+    public static decimal LoadFullBarAmount() => (decimal)ReadDouble("FullBarAmount", 10.0);
+    public static void SaveFullBarAmount(decimal value)
+        => WriteDouble("FullBarAmount", Math.Clamp((double)value, 0.01, 1000000.0));
+
     public static string GetOrCreateDeviceId()
     {
         string id = LoadDeviceId();

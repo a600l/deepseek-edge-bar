@@ -16,7 +16,10 @@
         <Border x:Name="collapsedStrip"
                 Width="6"
                 MinWidth="6"
+                Height="220"
+                VerticalAlignment="Center"
                 HorizontalAlignment="Left"
+                Panel.ZIndex="10"
                 Background="#FF64748B"
                 Cursor="Hand"
                 ToolTip="Click to view status"
@@ -175,7 +178,6 @@
                         <TextBlock Text=" · " FontSize="11" Foreground="#FF94A3B8" />
                         <TextBlock x:Name="LastRefresh" FontSize="11" Foreground="#FF94A3B8" Text="—" />
                     </StackPanel>
-                    <TextBlock x:Name="AccountLine" FontSize="11" Foreground="#FF94A3B8" Text="" Margin="0,2,0,0"/>
                 </DockPanel>
             </StackPanel>
         </Border>
