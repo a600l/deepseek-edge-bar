@@ -1,8 +1,8 @@
-﻿<Window x:Class="DeepSeekEdgeBar.MainWindow"
+<Window x:Class="DeepSeekEdgeBar.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="DeepSeek Edge Bar"
-        Width="6"
+        Width="12"
         MinHeight="220"
         WindowStyle="None"
         AllowsTransparency="True"
@@ -11,8 +11,11 @@
         ShowInTaskbar="False"
         ResizeMode="NoResize"
         FontFamily="Segoe UI"
-        Loaded="MainWindow_Loaded">
+        Loaded="MainWindow_Loaded"
+        KeyDown="MainWindow_KeyDown">
     <Grid>
+        <!-- Hit target is 12px wide so the 6px strip is easy to grab; the extra 6px is
+             transparent and faces the desktop, not the screen edge. -->
         <Border x:Name="collapsedStrip"
                 Width="6"
                 MinWidth="6"
@@ -20,10 +23,12 @@
                 VerticalAlignment="Center"
                 HorizontalAlignment="Left"
                 Panel.ZIndex="10"
-                Background="#FF64748B"
+                Background="{StaticResource BarStatusIdleBrush}"
                 Cursor="Hand"
-                ToolTip="Click to view status"
-                Opacity="0.85"
+                Focusable="True"
+                AutomationProperties.Name="DeepSeek Edge Bar status strip"
+                AutomationProperties.HelpText="Press Enter to expand, or click to view balance, usage and peak pricing."
+                ToolTip="Click (or press Enter) to view status"
                 MouseEnter="CollapsedStrip_MouseEnter"
                 MouseLeave="CollapsedStrip_MouseLeave">
             <Border x:Name="Grip"
@@ -41,55 +46,48 @@
                 Width="260"
                 HorizontalAlignment="Left"
                 VerticalAlignment="Center"
-                Background="#FF0B1120"
-                BorderBrush="#FF1F2A44"
+                Background="{StaticResource BarBackgroundBrush}"
+                BorderBrush="{StaticResource BarBorderBrush}"
                 BorderThickness="1"
                 CornerRadius="8"
-                Visibility="Hidden">
+                Visibility="Collapsed"
+                AutomationProperties.Name="DeepSeek Edge Bar details">
             <Border.Effect>
                 <DropShadowEffect BlurRadius="28" ShadowDepth="0" Opacity="0.35" Color="#000000" />
             </Border.Effect>
             <StackPanel Margin="10">
                 <DockPanel>
                     <Button x:Name="ExitButton"
+                            Style="{StaticResource BarIconButton}"
                             Content="✕"
-                            Width="26"
-                            Height="26"
                             DockPanel.Dock="Right"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Foreground="#FF94A3B8"
-                            Cursor="Hand"
+                            ToolTip="Hide the bar (still running in the tray)"
+                            AutomationProperties.Name="Hide bar"
                             Click="ExitButton_Click" />
                     <Button x:Name="SettingsButton"
+                            Style="{StaticResource BarIconButton}"
                             Content="⚙"
-                            Width="26"
-                            Height="26"
                             DockPanel.Dock="Right"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Foreground="#FF94A3B8"
-                            Cursor="Hand"
+                            ToolTip="Settings"
+                            AutomationProperties.Name="Settings"
                             Click="SettingsButton_Click" />
                     <Button x:Name="CollapseButton"
+                            Style="{StaticResource BarIconButton}"
                             Content="‹"
-                            Width="26"
-                            Height="26"
                             DockPanel.Dock="Right"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Foreground="#FF94A3B8"
-                            Cursor="Hand"
+                            ToolTip="Collapse to the edge strip"
+                            AutomationProperties.Name="Collapse to edge strip"
                             Click="CollapseButton_Click" />
                     <TextBlock Text="DeepSeek Edge Bar"
                                FontSize="11"
-                               Foreground="#FF94A3B8"
+                               Foreground="{StaticResource BarTextSecondaryBrush}"
                                VerticalAlignment="Center" />
                 </DockPanel>
 
-                <Border CornerRadius="6"
-                        Background="#FF101828"
-                        BorderBrush="#FF1F2A44"
+                <Border x:Name="StatusCard"
+                        CornerRadius="6"
+                        Background="{StaticResource BarSurfaceBrush}"
+                        BorderBrush="{StaticResource BarBorderBrush}"
                         BorderThickness="1"
                         Padding="10"
                         Margin="0,10,0,0">
@@ -97,24 +95,24 @@
                         <Ellipse x:Name="StatusDot"
                                  Width="8"
                                  Height="8"
-                                 Fill="#FF64748B"
+                                 Fill="{StaticResource BarStatusIdleBrush}"
                                  VerticalAlignment="Center" />
                         <StackPanel Margin="8,0,0,0">
                             <TextBlock x:Name="StatusValue"
                                        FontSize="13"
                                        FontWeight="SemiBold"
-                                       Foreground="#FFF8FAFC" />
+                                       Foreground="{StaticResource BarTextPrimaryBrush}" />
                             <TextBlock x:Name="StatusCountdown"
                                        FontSize="11"
-                                       Foreground="#FF94A3B8"
+                                       Foreground="{StaticResource BarTextSecondaryBrush}"
                                        Margin="0,2,0,0" />
                         </StackPanel>
                     </StackPanel>
                 </Border>
 
                 <Border CornerRadius="6"
-                        Background="#FF101828"
-                        BorderBrush="#FF1F2A44"
+                        Background="{StaticResource BarSurfaceBrush}"
+                        BorderBrush="{StaticResource BarBorderBrush}"
                         BorderThickness="1"
                         Padding="10"
                         Margin="0,8,0,0">
@@ -122,62 +120,52 @@
                         <TextBlock x:Name="BalanceValue"
                                    FontSize="26"
                                    FontWeight="SemiBold"
-                                   Foreground="#FFF8FAFC"
+                                   Foreground="{StaticResource BarTextPrimaryBrush}"
                                    Text="—" />
                         <TextBlock x:Name="BalanceDetail"
                                    FontSize="11"
-                                   Foreground="#FF94A3B8"
+                                   Foreground="{StaticResource BarTextSecondaryBrush}"
                                    TextWrapping="Wrap"
                                    Margin="0,4,0,0" />
                         <TextBlock x:Name="ApiKeyStatus"
                                    FontSize="11"
-                                   Foreground="#FF64748B"
+                                   Foreground="{StaticResource BarTextMutedBrush}"
                                    TextWrapping="Wrap"
                                    Margin="0,4,0,0" />
                     </StackPanel>
                 </Border>
 
-                <StackPanel Margin="2,8,2,0" ToolTip="TODAY: last day of usage data · MO: current month · TOP: most-used model">
-                    <TextBlock x:Name="UsageToday" FontSize="11" Foreground="#FF94A3B8" TextWrapping="Wrap" />
-                    <TextBlock x:Name="UsageMonth" FontSize="11" Foreground="#FF94A3B8" TextWrapping="Wrap" Margin="0,2,0,0" />
-                    <TextBlock x:Name="UsageTopModel" FontSize="11" Foreground="#FF94A3B8" TextWrapping="Wrap" Margin="0,2,0,0" />
-                    <TextBlock x:Name="UsageHint" FontSize="11" Foreground="#FF64748B" TextWrapping="Wrap" Margin="0,2,0,0" />
+                <StackPanel Margin="2,8,2,0" ToolTip="TODAY: usage so far today (DeepSeek's calendar) · MONTH: current month · TOP: most-used model">
+                    <TextBlock x:Name="UsageToday" FontSize="11" Foreground="{StaticResource BarTextSecondaryBrush}" TextWrapping="Wrap" />
+                    <TextBlock x:Name="UsageMonth" FontSize="11" Foreground="{StaticResource BarTextSecondaryBrush}" TextWrapping="Wrap" Margin="0,2,0,0" />
+                    <TextBlock x:Name="UsageTopModel" FontSize="11" Foreground="{StaticResource BarTextSecondaryBrush}" TextWrapping="Wrap" Margin="0,2,0,0" />
+                    <TextBlock x:Name="UsageHint" FontSize="11" Foreground="{StaticResource BarTextMutedBrush}" TextWrapping="Wrap" Margin="0,2,0,0" />
                 </StackPanel>
 
-                <StackPanel Margin="2,10,2,0">
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
-                        <Ellipse Width="8" Height="8" Fill="#FF22C55E" VerticalAlignment="Center" />
-                        <TextBlock Text="off-peak · lowest rates" FontSize="11" Foreground="#FF94A3B8" Margin="8,0,0,0" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
-                        <Ellipse Width="8" Height="8" Fill="#FFB91C1C" VerticalAlignment="Center" />
-                        <TextBlock Text="peak · 2× rates" FontSize="11" Foreground="#FF94A3B8" Margin="8,0,0,0" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
-                        <Ellipse Width="8" Height="8" Fill="#FFEF4444" VerticalAlignment="Center" />
-                        <TextBlock Text="problem · low balance / offline" FontSize="11" Foreground="#FF94A3B8" Margin="8,0,0,0" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal">
-                        <Ellipse Width="8" Height="8" Fill="#FF64748B" VerticalAlignment="Center" />
-                        <TextBlock Text="no API key" FontSize="11" Foreground="#FF94A3B8" Margin="8,0,0,0" />
-                    </StackPanel>
-                </StackPanel>
+                <!-- The model list is variable length, so it gets its own line and trims
+                     rather than pushing the refresh timestamp off the panel. -->
+                <TextBlock x:Name="ModelValue"
+                           FontSize="11"
+                           Foreground="{StaticResource BarTextSecondaryBrush}"
+                           Margin="2,10,2,0"
+                           Text="—"
+                           TextTrimming="CharacterEllipsis"
+                           TextWrapping="NoWrap" />
 
-                <DockPanel Margin="2,10,2,0">
+                <DockPanel Margin="2,6,2,0">
                     <Button x:Name="RefreshButton"
-                            Content="⟳"
+                            Style="{StaticResource BarIconButton}"
                             Width="22" Height="22"
+                            Content="⟳"
                             DockPanel.Dock="Right"
-                            Background="Transparent"
-                            BorderThickness="0"
-                            Foreground="#FF94A3B8"
-                            Cursor="Hand"
+                            ToolTip="Refresh now (Ctrl+R)"
+                            AutomationProperties.Name="Refresh now"
                             Click="RefreshButton_Click" />
-                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                        <TextBlock x:Name="ModelValue" FontSize="11" Foreground="#FF94A3B8" Text="—" />
-                        <TextBlock Text=" · " FontSize="11" Foreground="#FF94A3B8" />
-                        <TextBlock x:Name="LastRefresh" FontSize="11" Foreground="#FF94A3B8" Text="—" />
-                    </StackPanel>
+                    <TextBlock x:Name="LastRefresh"
+                               FontSize="11"
+                               Foreground="{StaticResource BarTextSecondaryBrush}"
+                               VerticalAlignment="Center"
+                               Text="—" />
                 </DockPanel>
             </StackPanel>
         </Border>

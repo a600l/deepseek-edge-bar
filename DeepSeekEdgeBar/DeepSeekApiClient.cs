@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DeepSeekEdgeBar;
@@ -27,12 +28,12 @@ public class DeepSeekApiClient
         _apiKey = apiKey;
     }
 
-    public async Task<BalanceInfo> GetBalanceAsync()
+    public async Task<BalanceInfo> GetBalanceAsync(CancellationToken ct = default)
     {
         using var req = new HttpRequestMessage(HttpMethod.Get, "https://api.deepseek.com/user/balance");
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
-        using var resp = await Shared.SendAsync(req).ConfigureAwait(false);
-        var body = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+        using var resp = await Shared.SendAsync(req, ct).ConfigureAwait(false);
+        var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
         if (!resp.IsSuccessStatusCode)
             throw new HttpRequestException($"DeepSeek API error {(int)resp.StatusCode}: {body}");
         using var doc = JsonDocument.Parse(body);
@@ -51,12 +52,12 @@ public class DeepSeekApiClient
         return new BalanceInfo(available, currency, total, granted, topped);
     }
 
-    public async Task<List<string>> GetModelsAsync()
+    public async Task<List<string>> GetModelsAsync(CancellationToken ct = default)
     {
         using var req = new HttpRequestMessage(HttpMethod.Get, "https://api.deepseek.com/v1/models");
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
-        using var resp = await Shared.SendAsync(req).ConfigureAwait(false);
-        var body = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+        using var resp = await Shared.SendAsync(req, ct).ConfigureAwait(false);
+        var body = await resp.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
         if (!resp.IsSuccessStatusCode)
             throw new HttpRequestException($"DeepSeek API error {(int)resp.StatusCode}: {body}");
         using var doc = JsonDocument.Parse(body);

@@ -1,0 +1,157 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Surfaces -->
+    <SolidColorBrush x:Key="BarBackgroundBrush" Color="#FF0B1120" />
+    <SolidColorBrush x:Key="BarSurfaceBrush" Color="#FF101828" />
+    <SolidColorBrush x:Key="BarBorderBrush" Color="#FF1F2A44" />
+
+    <!-- Text. Secondary/muted are chosen to clear WCAG AA (4.5:1) on BarBackgroundBrush:
+         secondary 7.3:1, muted 7.1:1. The previous muted value (#64748B) was 3.9:1 and failed. -->
+    <SolidColorBrush x:Key="BarTextPrimaryBrush" Color="#FFF8FAFC" />
+    <SolidColorBrush x:Key="BarTextSecondaryBrush" Color="#FF94A3B8" />
+    <SolidColorBrush x:Key="BarTextMutedBrush" Color="#FF8FA0B8" />
+
+    <!-- Status colours. Also consumed by code-behind via FindResource so the legend
+         and the live indicator can never drift apart. -->
+    <SolidColorBrush x:Key="BarStatusGreenBrush" Color="#FF22C55E" />
+    <SolidColorBrush x:Key="BarStatusPeakBrush" Color="#FFB91C1C" />
+    <SolidColorBrush x:Key="BarStatusErrorBrush" Color="#FFEF4444" />
+    <SolidColorBrush x:Key="BarStatusIdleBrush" Color="#FF64748B" />
+    <SolidColorBrush x:Key="BarAccentTextBrush" Color="#FF07140B" />
+
+    <!-- Chrome-less icon button: transparent at rest, visible hover/pressed/disabled
+         states so the icons feel clickable. Keyboard focus is drawn explicitly because
+         the default template's focus visual is invisible on this dark surface. -->
+    <Style x:Key="BarIconButton" TargetType="Button">
+        <Setter Property="Width" Value="26" />
+        <Setter Property="Height" Value="26" />
+        <Setter Property="Foreground" Value="{StaticResource BarTextSecondaryBrush}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Chrome"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="4">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Chrome" Property="Background" Value="#1FFFFFFF" />
+                            <Setter Property="Foreground" Value="{StaticResource BarTextPrimaryBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Chrome" Property="Background" Value="#33FFFFFF" />
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource BarStatusGreenBrush}" />
+                            <Setter TargetName="Chrome" Property="BorderThickness" Value="1" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.4" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Primary action button used by the settings dialog. -->
+    <Style x:Key="BarPrimaryButton" TargetType="Button">
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Background" Value="{StaticResource BarStatusGreenBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource BarAccentTextBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Chrome"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="4">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Chrome" Property="Opacity" Value="0.88" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Chrome" Property="Opacity" Value="0.72" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Chrome" Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Secondary/neutral button used by the settings dialog. -->
+    <Style x:Key="BarSecondaryButton" TargetType="Button">
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Background" Value="{StaticResource BarSurfaceBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource BarTextPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BarBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Chrome"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Chrome" Property="Background" Value="#FF16203A" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Chrome" Property="Background" Value="#FF1F2A44" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Field label / helper text pairing used throughout the settings dialog. -->
+    <Style x:Key="BarFieldLabel" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="Foreground" Value="{StaticResource BarTextSecondaryBrush}" />
+        <Setter Property="Margin" Value="0,18,0,0" />
+    </Style>
+
+    <Style x:Key="BarFieldHint" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="Foreground" Value="{StaticResource BarTextMutedBrush}" />
+        <Setter Property="Margin" Value="0,2,0,0" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <Style x:Key="BarTextBox" TargetType="TextBox">
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Padding" Value="6,4" />
+        <Setter Property="Background" Value="{StaticResource BarBackgroundBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource BarTextPrimaryBrush}" />
+        <Setter Property="CaretBrush" Value="{StaticResource BarTextPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource BarBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+</ResourceDictionary>

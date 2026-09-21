@@ -9,13 +9,15 @@
         Width="360" SizeToContent="Height"
         WindowStyle="None" AllowsTransparency="False" ResizeMode="NoResize"
         WindowStartupLocation="CenterScreen" Topmost="True"
-        Background="#FF0B1120" Foreground="#FFF8FAFC"
+        Background="{StaticResource BarBackgroundBrush}"
+        Foreground="{StaticResource BarTextPrimaryBrush}"
         FontFamily="Segoe UI" FontSize="13"
+        KeyDown="SettingsWindow_KeyDown"
         MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <Grid Grid.Row="0" Margin="0">
@@ -26,7 +28,7 @@
             <TextBlock Grid.Column="0"
                        Text="DeepSeek Edge Bar — Settings"
                        FontSize="15" FontWeight="SemiBold"
-                       Foreground="#FFF8FAFC"
+                       Foreground="{StaticResource BarTextPrimaryBrush}"
                        Padding="12,10,12,10"
                        VerticalAlignment="Center"
                        TextTrimming="CharacterEllipsis"/>
@@ -34,95 +36,111 @@
                     x:Name="CloseButton"
                     Content="✕"
                     Background="Transparent"
-                    Foreground="#FF94A3B8"
+                    Foreground="{StaticResource BarTextSecondaryBrush}"
                     BorderThickness="0"
                     Cursor="Hand"
                     Padding="12,4"
+                    ToolTip="Close (Esc)"
+                    AutomationProperties.Name="Close settings"
                     Click="CloseButton_Click"/>
         </Grid>
 
-        <StackPanel Grid.Row="1" Margin="16,4,16,16">
-            <TextBlock Text="DeepSeek Platform token (usage stats)"
-                       FontSize="11" Foreground="#FF94A3B8" Margin="0,18,0,0"/>
-            <TextBlock Text="Optional — unlocks per-model token usage, requests, and cost tracking."
-                       FontSize="11" Foreground="#FF94A3B8" Margin="0,2,0,0"/>
-            <TextBox x:Name="PlatformTokenBox"
-                     Height="30" Margin="0,6,0,0" Padding="6"
-                     Background="#FF0B1120" Foreground="#FFF8FAFC"
-                     BorderBrush="#FF1F2A44" BorderThickness="1"
-                     FontFamily="Consolas" FontSize="11"
-                     ToolTip="1. Sign in to platform.deepseek.com.&#x0a;2. Press F12 to open DevTools.&#x0a;3. Open Application → Local Storage → https://platform.deepseek.com.&#x0a;4. Find the key named userToken and copy its value.&#x0a;5. Paste it here and click Use platform token."/>
-            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                <Button x:Name="UsePlatformTokenButton"
-                        Content="Use platform token"
-                        Width="130" Height="30"
-                        Background="#FF22C55E" Foreground="#FF07140B"
-                        FontWeight="SemiBold"
-                        BorderThickness="0" Cursor="Hand"
-                        Click="UsePlatformTokenButton_Click"/>
+        <!-- Scrolls only when the work area is too short to show every section. -->
+        <ScrollViewer Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="16,4,16,16">
+                <TextBlock Text="DeepSeek Platform token (usage stats)"
+                           Style="{StaticResource BarFieldLabel}"/>
+                <TextBlock Text="Optional — unlocks per-model token usage, requests, and cost tracking."
+                           Style="{StaticResource BarFieldHint}"/>
+                <TextBox x:Name="PlatformTokenBox"
+                         Style="{StaticResource BarTextBox}"
+                         Margin="0,6,0,0"
+                         FontFamily="Consolas" FontSize="11"
+                         AutomationProperties.Name="DeepSeek platform token"
+                         ToolTip="1. Sign in to platform.deepseek.com and open the Usage page.&#x0a;2. Press F12 → Network.&#x0a;3. Click an api/v0/ request (e.g. a usage/amount call) → Headers → Request Headers.&#x0a;4. Copy the 64-character value after &quot;Bearer &quot; in the authorization header.&#x0a;5. Paste it here and click Use platform token.&#x0a;&#x0a;Do NOT use userToken from Local Storage — that is a different 92-character value and is rejected."/>
+                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                    <Button x:Name="UsePlatformTokenButton"
+                            Style="{StaticResource BarPrimaryButton}"
+                            Content="Use platform token"
+                            Width="130"
+                            AutomationProperties.Name="Verify and save platform token"
+                            Click="UsePlatformTokenButton_Click"/>
+                </StackPanel>
+                <TextBlock x:Name="PlatformStatus"
+                           FontSize="11" Foreground="{StaticResource BarTextSecondaryBrush}"
+                           TextWrapping="Wrap" Margin="0,8,0,0"/>
+
+                <TextBlock Text="API key"
+                           Style="{StaticResource BarFieldLabel}"/>
+                <TextBlock Text="Stored locally in Windows Registry — never shared."
+                           Style="{StaticResource BarFieldHint}"/>
+                <PasswordBox x:Name="ApiKeyBox"
+                             Height="30" Margin="0,6,0,0" Padding="6,4"
+                             Background="{StaticResource BarBackgroundBrush}"
+                             Foreground="{StaticResource BarTextPrimaryBrush}"
+                             BorderBrush="{StaticResource BarBorderBrush}" BorderThickness="1"
+                             VerticalContentAlignment="Center"
+                             AutomationProperties.Name="DeepSeek API key"/>
+
+                <TextBlock Text="Balance bar target"
+                           Style="{StaticResource BarFieldLabel}"/>
+                <TextBlock Text="The strip's two-tone fill = balance divided by this amount (default 10). A balance equal to this value fills the whole bar."
+                           Style="{StaticResource BarFieldHint}"/>
+                <TextBox x:Name="FullBarBox"
+                         Style="{StaticResource BarTextBox}"
+                         Margin="0,6,0,0" Width="120" HorizontalAlignment="Left"
+                         AutomationProperties.Name="Balance bar target amount"/>
+
+                <TextBlock Text="Opacity"
+                           Style="{StaticResource BarFieldLabel}"/>
+                <TextBlock Text="Applies to the docked edge strip only — the expanded panel stays fully opaque. Lower it for a subtle always-there peek; hovering the strip brightens it."
+                           Style="{StaticResource BarFieldHint}"/>
+                <StackPanel Orientation="Horizontal" Margin="0,6,0,0" VerticalAlignment="Center">
+                    <Slider x:Name="OpacitySlider"
+                            Width="220" Minimum="0.2" Maximum="1.0" Value="1.0"
+                            AutomationProperties.Name="Bar opacity"/>
+                    <TextBlock x:Name="OpacityValue"
+                               Margin="10,0,0,0" Width="40"
+                               VerticalAlignment="Center"
+                               Foreground="{StaticResource BarTextSecondaryBrush}"/>
+                </StackPanel>
+
+                <CheckBox x:Name="StartWithWindowsCheck" Content="Start with Windows"
+                          Foreground="{StaticResource BarTextPrimaryBrush}" Margin="0,14,0,0"
+                          AutomationProperties.Name="Start with Windows"/>
+
+                <CheckBox x:Name="ToggleHotkeyCheck"
+                          Content="Global hotkey: Ctrl+Alt+D"
+                          Foreground="{StaticResource BarTextPrimaryBrush}" Margin="0,8,0,0"
+                          AutomationProperties.Name="Enable global toggle hotkey"
+                          ToolTip="Registers a system-wide hotkey that expands or collapses the bar, and brings it back if you have hidden it to the tray."/>
+                <TextBlock Text="Works from any app. Also restores the bar after Hide."
+                           Style="{StaticResource BarFieldHint}"/>
+
+                <Grid Margin="0,18,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="SaveButton"
+                            Grid.Column="1"
+                            Style="{StaticResource BarPrimaryButton}"
+                            Content="Save"
+                            Width="90" Margin="0,0,8,0"
+                            AutomationProperties.Name="Save settings"
+                            Click="SaveButton_Click"/>
+                    <Button x:Name="CancelButton"
+                            Grid.Column="2"
+                            Style="{StaticResource BarSecondaryButton}"
+                            Content="Cancel"
+                            Width="90"
+                            AutomationProperties.Name="Cancel and discard changes"
+                            Click="CancelButton_Click"/>
+                </Grid>
             </StackPanel>
-            <TextBlock x:Name="PlatformStatus"
-                       FontSize="11" Foreground="#FF94A3B8"
-                       TextWrapping="Wrap" Margin="0,8,0,0"/>
-
-            <TextBlock Text="API key" Margin="0,18,0,0"
-                       FontSize="11" Foreground="#FF94A3B8"/>
-            <TextBlock Text="Stored locally in Windows Registry — never shared."
-                       FontSize="11" Foreground="#FF94A3B8" Margin="0,2,0,0"/>
-            <PasswordBox x:Name="ApiKeyBox"
-                         Height="30" Margin="0,6,0,0" Padding="6"
-                         Background="#FF0B1120" Foreground="#FFF8FAFC"
-                         BorderBrush="#FF1F2A44" BorderThickness="1"/>
-
-            <TextBlock Text="Balance bar target"
-                       Margin="0,14,0,0"
-                       FontSize="11" Foreground="#FF94A3B8"/>
-            <TextBlock Text="The strip's two-tone fill = balance divided by this amount (default 10). A balance equal to this value fills the whole bar."
-                       FontSize="11" Foreground="#FF94A3B8" Margin="0,2,0,0" TextWrapping="Wrap"/>
-            <TextBox x:Name="FullBarBox"
-                     Height="30" Margin="0,6,0,0" Padding="6" Width="120" HorizontalAlignment="Left"
-                     Background="#FF0B1120" Foreground="#FFF8FAFC"
-                     BorderBrush="#FF1F2A44" BorderThickness="1"/>
-
-            <TextBlock Text="Opacity"
-                       Margin="0,14,0,0"
-                       FontSize="11" Foreground="#FF94A3B8"/>
-            <TextBlock Text="Drop the widget opacity for an always-visible peek."
-                       FontSize="11" Foreground="#FF94A3B8" Margin="0,2,0,0"/>
-            <StackPanel Orientation="Horizontal" Margin="0,6,0,0" VerticalAlignment="Center">
-                <Slider x:Name="OpacitySlider"
-                        Width="220" Minimum="0.2" Maximum="1.0" Value="1.0"/>
-                <TextBlock x:Name="OpacityValue"
-                           Margin="10,0,0,0"
-                           VerticalAlignment="Center" Width="40"/>
-            </StackPanel>
-
-            <CheckBox x:Name="StartWithWindowsCheck" Content="Start with Windows"
-                      Foreground="#FFF8FAFC" Margin="0,14,0,0"/>
-
-            <Grid Margin="0,18,0,0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <Button x:Name="SaveButton"
-                        Grid.Column="1"
-                        Content="Save"
-                        Width="90" Height="30" Margin="0,0,8,0"
-                        Background="#FF22C55E" Foreground="#FF07140B"
-                        FontWeight="SemiBold"
-                        BorderThickness="0" Cursor="Hand"
-                        Click="SaveButton_Click"/>
-                <Button x:Name="CancelButton"
-                        Grid.Column="2"
-                        Content="Cancel"
-                        Width="90" Height="30"
-                        Background="#FF101828" Foreground="#FFF8FAFC"
-                        BorderBrush="#FF1F2A44" BorderThickness="1"
-                        Cursor="Hand"
-                        Click="CancelButton_Click"/>
-            </Grid>
-        </StackPanel>
+        </ScrollViewer>
     </Grid>
 </Window>

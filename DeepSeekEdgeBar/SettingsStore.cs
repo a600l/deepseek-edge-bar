@@ -23,9 +23,6 @@ public static class SettingsStore
     public static double LoadOpacity() => ReadDouble("Opacity", 1.0);
     public static void SaveOpacity(double value) => WriteDouble("Opacity", value);
 
-    public static bool LoadHideToTray() => ReadBool("HideToTray", false);
-    public static void SaveHideToTray(bool value) => WriteBool("HideToTray", value);
-
     public static bool LoadStartWithWindows() => ReadBool("StartWithWindows", false);
     public static void SaveStartWithWindows(bool value)
     {
@@ -42,54 +39,17 @@ public static class SettingsStore
         WriteBool("StartWithWindows", value);
     }
 
-    public static string LoadSessionToken() => ReadString("AccountSessionToken", "");
-    public static void SaveSessionToken(string value) => WriteString("AccountSessionToken", value ?? "");
-
-    public static string LoadAccountEmail() => ReadString("AccountEmail", "");
-    public static void SaveAccountEmail(string value) => WriteString("AccountEmail", value ?? "");
-
-    public static string LoadAccountUserId() => ReadString("AccountUserId", "");
-    public static void SaveAccountUserId(string value) => WriteString("AccountUserId", value ?? "");
-
-    public static string LoadDisplayName() => ReadString("AccountName", "");
-    public static void SaveDisplayName(string value) => WriteString("AccountName", value ?? "");
-
-    public static string LoadProvider() => ReadString("AccountProvider", "");
-    public static void SaveProvider(string value) => WriteString("AccountProvider", value ?? "");
+    // Ctrl+Alt+D is a global hotkey, so it is off unless the user asks for it.
+    public static bool LoadToggleHotkey() => ReadBool("ToggleHotkey", false);
+    public static void SaveToggleHotkey(bool value) => WriteBool("ToggleHotkey", value);
 
     private const string PlatformSessionToken = "PlatformSessionToken";
     public static string LoadPlatformSessionToken() => ReadString(PlatformSessionToken, "");
     public static void SavePlatformSessionToken(string value) => WriteString(PlatformSessionToken, value ?? "");
 
-    public static string LoadDeviceId() => ReadString("DeviceId", "");
-    public static void SaveDeviceId(string value) => WriteString("DeviceId", value ?? "");
-
     public static decimal LoadFullBarAmount() => (decimal)ReadDouble("FullBarAmount", 10.0);
     public static void SaveFullBarAmount(decimal value)
         => WriteDouble("FullBarAmount", Math.Clamp((double)value, 0.01, 1000000.0));
-
-    public static string GetOrCreateDeviceId()
-    {
-        string id = LoadDeviceId();
-        if (!string.IsNullOrWhiteSpace(id)) return id;
-        id = Guid.NewGuid().ToString();
-        SaveDeviceId(id);
-        return id;
-    }
-
-    public static void ClearAccount()
-    {
-        try
-        {
-            using var k = Registry.CurrentUser.OpenSubKey(SubKey, true);
-            k?.DeleteValue("AccountSessionToken", false);
-            k?.DeleteValue("AccountEmail", false);
-            k?.DeleteValue("AccountUserId", false);
-            k?.DeleteValue("AccountName", false);
-            k?.DeleteValue("AccountProvider", false);
-        }
-        catch { }
-    }
 
     public static string LoadEdge() => ReadString("Edge", "Right");
     public static void SaveEdge(string value) => WriteString("Edge", value == "Left" ? "Left" : "Right");

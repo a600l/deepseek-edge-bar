@@ -3,3 +3,6 @@ obj/
 *.user
 .vs/
 .playwright-mcp/
+.agents/
+.claude/
+skills-lock.json

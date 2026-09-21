@@ -21,7 +21,10 @@ public record UsageSnapshot(
     long MonthRequests,
     double MonthCost,
     string? TopModel,
-    List<ModelUsage> PerModel);
+    List<ModelUsage> PerModel,
+    // ISO date of the most recent day that recorded usage, or null. Lets the panel say how
+    // stale the last real numbers are rather than presenting them as today's.
+    string? LastActiveDate);
 
 public class DeepSeekUsageAuthException : Exception
 {
@@ -79,8 +82,8 @@ public class DeepSeekUsageClient
         SumRows(totalAmount, out monthTokens, out monthRequests);
         double monthCost = CostOfRows(totalCost);
 
-        List<JsonElement> todayAmountRows = DaysForDate(daysAmount, DateTime.Today);
-        List<JsonElement> todayCostRows = DaysForDate(daysCost, DateTime.Today);
+        List<JsonElement> todayAmountRows = RowsForExactDate(daysAmount, DateTime.Today);
+        List<JsonElement> todayCostRows = RowsForExactDate(daysCost, DateTime.Today);
 
         long todayTokens, todayRequests;
         SumRows(todayAmountRows, out todayTokens, out todayRequests);
@@ -89,7 +92,7 @@ public class DeepSeekUsageClient
         List<ModelUsage> perModel = AggregatePerModel(totalAmount, totalCost);
         string? topModel = perModel.Count > 0 ? perModel[0].Model : null;
 
-        return new UsageSnapshot(true, null, todayTokens, todayRequests, todayCost, monthTokens, monthRequests, monthCost, topModel, perModel);
+        return new UsageSnapshot(true, null, todayTokens, todayRequests, todayCost, monthTokens, monthRequests, monthCost, topModel, perModel, MostRecentActiveDate(daysAmount));
     }
 
     private static JsonElement ParseBizData(string body)
@@ -141,7 +144,16 @@ public class DeepSeekUsageClient
 
     private static List<JsonElement> ModelsOfDay(JsonElement day) => RowsOf(day, "data");
 
-    private static List<JsonElement> DaysForDate(List<JsonElement> days, DateTime date)
+    /// <summary>
+    /// The models recorded under exactly this date, or nothing.
+    ///
+    /// Deliberately no "closest day that has data" fallback. The day buckets are keyed by the
+    /// platform's own calendar, which is not necessarily this machine's — the endpoint ignores
+    /// a tz parameter, so there is no way to ask for a different one. A missing bucket therefore
+    /// means "no usage that day", not "date unavailable". Substituting the most recent active
+    /// day silently relabelled it as TODAY; with sparse usage that number could be days stale.
+    /// </summary>
+    private static List<JsonElement> RowsForExactDate(List<JsonElement> days, DateTime date)
     {
         string want = date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         foreach (var day in days)
@@ -150,11 +162,17 @@ public class DeepSeekUsageClient
             if (string.Equals(d, want, StringComparison.Ordinal))
                 return ModelsOfDay(day);
         }
+        return new List<JsonElement>();
+    }
+
+    private static string? MostRecentActiveDate(List<JsonElement> days)
+    {
         for (int i = days.Count - 1; i >= 0; i--)
         {
-            if (DayHasData(days[i])) return ModelsOfDay(days[i]);
+            if (!DayHasData(days[i])) continue;
+            return days[i].TryGetProperty("date", out var el) ? el.GetString() : null;
         }
-        return new List<JsonElement>();
+        return null;
     }
 
     private static bool DayHasData(JsonElement day)
