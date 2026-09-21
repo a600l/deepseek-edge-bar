@@ -573,8 +573,8 @@ public partial class MainWindow : Window
         };
         brush.GradientStops.Add(new GradientStop(_greenBrush.Color, 0.00));
         brush.GradientStops.Add(new GradientStop(_greenBrush.Color, ratio));
-        brush.GradientStops.Add(new GradientStop(Color.FromRgb(0x1E, 0x2A, 0x44), ratio));
-        brush.GradientStops.Add(new GradientStop(Color.FromRgb(0x1E, 0x2A, 0x44), 1.00));
+        brush.GradientStops.Add(new GradientStop(Color.FromRgb(0x1C, 0x2A, 0x47), ratio));
+        brush.GradientStops.Add(new GradientStop(Color.FromRgb(0x1C, 0x2A, 0x47), 1.00));
         return brush;
     }
 

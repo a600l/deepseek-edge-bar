@@ -10,7 +10,7 @@
         Topmost="True"
         ShowInTaskbar="False"
         ResizeMode="NoResize"
-        FontFamily="Segoe UI"
+        FontFamily="{StaticResource BarFontFamily}"
         Loaded="MainWindow_Loaded"
         KeyDown="MainWindow_KeyDown">
     <Grid>

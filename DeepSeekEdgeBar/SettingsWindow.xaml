@@ -11,7 +11,7 @@
         WindowStartupLocation="CenterScreen" Topmost="True"
         Background="{StaticResource BarBackgroundBrush}"
         Foreground="{StaticResource BarTextPrimaryBrush}"
-        FontFamily="Segoe UI" FontSize="13"
+        FontFamily="{StaticResource BarFontFamily}" FontSize="13"
         KeyDown="SettingsWindow_KeyDown"
         MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
     <Grid>
