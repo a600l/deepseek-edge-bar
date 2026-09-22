@@ -13,4 +13,10 @@
     <PackageReference Include="WPF.NotifyIcon" Version="1.0.2.510" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The usage parser's entry point (BuildSnapshot) is internal so tests can feed it
+         recorded JSON without a network round trip. -->
+    <InternalsVisibleTo Include="DeepSeekEdgeBar.Tests" />
+  </ItemGroup>
+
 </Project>

@@ -49,6 +49,8 @@ public partial class MainWindow : Window
     // currently on screen and let the tick skip redundant work.
     private bool _hasLiveBalance;
     private bool? _lastPeak;
+    private decimal _lastStripBalance;
+    private decimal _lastStripFullAmount;
 
     private bool _isExpanded;
     private bool _isRefreshing;
@@ -110,6 +112,7 @@ public partial class MainWindow : Window
 
     private void MainWindow_Closed(object? sender, EventArgs e)
     {
+        SettingsStore.SaveDockPosition(Left, Top);
         _refreshTimer.Stop();
         _peakTimer.Stop();
         UnregisterHotkey();
@@ -205,7 +208,17 @@ public partial class MainWindow : Window
         BeginAnimation(WidthProperty, widthAnim);
     }
 
-    private void PositionWindow() => DockToEdge();
+    private void PositionWindow()
+    {
+        // Restore last session's docked monitor first, then snap to its edge. If that
+        // monitor is gone, DockToEdge falls back to the nearest remaining one.
+        if (SettingsStore.LoadDockPosition(out double left, out double top))
+        {
+            Left = left;
+            Top = top;
+        }
+        DockToEdge();
+    }
 
     // Known limitation: SystemParameters.WorkArea always describes the primary monitor,
     // so the bar docks to the primary display even when moved elsewhere. Making this
@@ -450,6 +463,10 @@ public partial class MainWindow : Window
             _lastPeak = peak;
             StatusDot.Fill = peak ? _peakBrush : _greenBrush;
             SetBarHeight(peak ? PeakBarHeight : BarHeight);
+            // Flip the whole strip tone so peak is unmistakable at a glance even collapsed.
+            // Off-peak, rebuild the tone from the last live balance so a refresh mid-tick and
+            // the tick can never disagree about the most recent numbers.
+            collapsedStrip.Background = peak ? PeakGradient() : BarGradient(_lastStripBalance, _lastStripFullAmount);
             StatusValue.Text = peak ? "PEAK · 2× rates" : "OFF-PEAK · lowest rates";
         }
         StatusCountdown.Text = (peak ? "off in " : "peak in ")
@@ -503,7 +520,12 @@ public partial class MainWindow : Window
         else
         {
             SolidColorBrush balanceBrush = BrushForBalance(info.TotalBalance, fullAmount);
+            // Save the current balance inputs so the per-second tick can rebuild the strip's
+            // gradient when peak ends; without them the strip would stay red forever after the
+            // first peak of the session instead of returning to the balance tone.
             collapsedStrip.Background = BarGradient(info.TotalBalance, fullAmount);
+            _lastStripBalance = info.TotalBalance;
+            _lastStripFullAmount = fullAmount;
             BalanceValue.Text = $"{info.Currency} {info.TotalBalance:0.00}";
             BalanceValue.Foreground = balanceBrush;
             BalanceDetail.Foreground = balanceBrush;
@@ -565,7 +587,7 @@ public partial class MainWindow : Window
     // Two-tone strip: balance colour up to the ratio, track colour above it.
     private LinearGradientBrush BarGradient(decimal balance, decimal fullAmount)
     {
-        double ratio = Math.Max(0d, Math.Min(1d, (double)(balance / fullAmount)));
+        double ratio = FillRatio(balance, fullAmount);
         var brush = new LinearGradientBrush
         {
             StartPoint = new Point(0.5, 1),
@@ -573,6 +595,39 @@ public partial class MainWindow : Window
         };
         brush.GradientStops.Add(new GradientStop(_greenBrush.Color, 0.00));
         brush.GradientStops.Add(new GradientStop(_greenBrush.Color, ratio));
+        brush.GradientStops.Add(new GradientStop(Color.FromRgb(0x1C, 0x2A, 0x47), ratio));
+        brush.GradientStops.Add(new GradientStop(Color.FromRgb(0x1C, 0x2A, 0x47), 1.00));
+        return brush;
+    }
+
+    /// <summary>
+    /// How much of the strip to fill, clamped to 0..1.
+    ///
+    /// Guards a zero divider rather than trusting the caller: both callers can run before the
+    /// first successful balance refresh, and the peak tick's stored balance/full pair starts life
+    /// as 0/0. That is NaN, and Math.Min/Math.Max propagate NaN (unlike C's fmin), which would put
+    /// a NaN offset on a GradientStop. Treat "unknown" as an empty fill. Internal so the tests can
+    /// pin it without standing up a Window.
+    /// </summary>
+    internal static double FillRatio(decimal balance, decimal fullAmount)
+        => fullAmount <= 0m ? 0d : Math.Max(0d, Math.Min(1d, (double)(balance / fullAmount)));
+
+    /// <summary>
+    /// Red twin of BarGradient: same balance-shape, but using the peak red tone for the filled
+    /// portion so the collapsed strip reads "peak, right now" without losing the balance hint.
+    /// Used only by the per-second tick when it paints the peak state, never by a refresh, so a
+    /// live-balance error or "no API key" wash can never be overwritten by a peak repaint.
+    /// </summary>
+    private LinearGradientBrush PeakGradient()
+    {
+        double ratio = FillRatio(_lastStripBalance, _lastStripFullAmount);
+        var brush = new LinearGradientBrush
+        {
+            StartPoint = new Point(0.5, 1),
+            EndPoint = new Point(0.5, 0)
+        };
+        brush.GradientStops.Add(new GradientStop(_peakBrush.Color, 0.00));
+        brush.GradientStops.Add(new GradientStop(_peakBrush.Color, ratio));
         brush.GradientStops.Add(new GradientStop(Color.FromRgb(0x1C, 0x2A, 0x47), ratio));
         brush.GradientStops.Add(new GradientStop(Color.FromRgb(0x1C, 0x2A, 0x47), 1.00));
         return brush;

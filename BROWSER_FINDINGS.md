@@ -93,7 +93,33 @@ Tooltip should say:
 ### Not established (do not claim otherwise)
 
 - **Where** the token is minted — no exchange endpoint was identified. If one exists, the app
-  could mint the working token from a stored credential itself and the user would never copy a
+  could mint the working token from the stored credential itself and the user would never copy a
   token by hand. Finding it needs a network trace of a **fresh page load** (the token is
   obtained during load, before any user interaction), inspecting the response body of the
   bootstrap/auth call. This was not completed.
+
+### Where the token is actually minted (bundle trace, 2026-09-22)
+
+Trace of the sign-in page bundle (`main.720f04418a.js`, `4626.8e918a9f7d.js`,
+`6814.13de689a87.js`) — the answer to the long-standing question:
+
+- The 64-char token is minted **server-side by the auth service at login**, in two places:
+  - `POST {baseUrl}/login` with `{email,password,device_id,os}` → response carries
+    `biz_data.user` (the app's only credential+mint exchange).
+  - `POST {baseUrl}/oauth/get_token` / `/oauth/apple/login` etc. — the `userToken` mint is the
+    `token` field returned from these, stored via `setPersistedCurrentUser(token, id)`.
+- **Persistence is conditional:** the token is written to `localStorage` **only when
+  `persistToken` is not false**. The sign-in code that runs once decides:
+  `!1 === e.user.persistToken ? e.user.getMemoryToken().token : D.get()` — i.e. when
+  `persistToken===false` (which persists on some regions/providers) the token is **kept in page
+  memory only** and never touches storage. That is exactly the mainland-China path and matches
+  the storage dump: `localStorage.userToken` is 92 chars (a *different* value) and there is no
+  64-char value anywhere.
+- Header injection confirmed: `r&&(e.headers.Authorization="Bearer ".concat(r),...)` in the
+  request-queue hook — the 64-char memory token is put on the wire as `Authorization: Bearer`,
+  which is why it reads 64 on the wire and exists nowhere in storage.
+
+**So it is not a rediscoverable secret and cannot be auto-captured after the browser is closed**
+without the user's password (+ Turnstile + mainland device fingerprint). The copy-once manual
+capture remains the only correct path. No endpoint was found that could mint a *new* token from
+a stored credential without the credential itself.

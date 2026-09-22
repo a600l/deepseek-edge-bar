@@ -55,6 +55,22 @@ public static class SettingsStore
     public static void SaveEdge(string value) => WriteString("Edge", value == "Left" ? "Left" : "Right");
     public static bool IsLeftEdge() => LoadEdge() == "Left";
 
+    // Remembers which monitor the bar was docked to last session (as a DIP coordinate),
+    // so startup restores to the same screen edge instead of the primary monitor.
+    public static bool LoadDockPosition(out double left, out double top)
+    {
+        left = 0d;
+        top = 0d;
+        string s = ReadString("DockPosition", "");
+        if (string.IsNullOrWhiteSpace(s)) return false;
+        string[] parts = s.Split('|');
+        if (parts.Length != 2) return false;
+        return double.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out left) &&
+               double.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out top);
+    }
+    public static void SaveDockPosition(double left, double top)
+        => WriteString("DockPosition", $"{left.ToString("F2", CultureInfo.InvariantCulture)}|{top.ToString("F2", CultureInfo.InvariantCulture)}");
+
     private static string ReadString(string name, string def)
     {
         try { using var k = Registry.CurrentUser.OpenSubKey(SubKey); return k?.GetValue(name, def)?.ToString() ?? def; }

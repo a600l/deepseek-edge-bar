@@ -68,7 +68,11 @@ public class DeepSeekUsageClient
         }
     }
 
-    private static UsageSnapshot BuildSnapshot(string amountBody, string costBody)
+    /// <summary>
+    /// Parses one amount body and one cost body into a snapshot. Internal rather than private so
+    /// the tests can drive it from recorded JSON; it does no I/O and reads nothing else.
+    /// </summary>
+    internal static UsageSnapshot BuildSnapshot(string amountBody, string costBody)
     {
         JsonElement amountBiz = ParseBizData(amountBody);
         JsonElement costBiz = ParseBizData(costBody);
